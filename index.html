@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Center of gravity and track width</title>
+<!-- Trilingual (EN / FR-CA / ES-US). No JavaScript: radio buttons + CSS only. Host on GitHub Pages and iframe into EasyGenerator. -->
+<style>
+  :root {
+    --navy: #1b2f4e;
+    --steel: #6a7b93;
+    --dark: #2a3548;
+    --fuel: #f39a1e;
+    --fueld: #c46f00;
+    --green: #2f9e5a;
+    --yel: #f4c20d;
+    --red: #d93025;
+    --txt: #26354d;
+    --gray: #5a6678;
+    --bg: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 16px;
+    font-family: Inter, Roboto, "Open Sans", Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--txt);
+  }
+  .cg-wrap {
+    max-width: 1040px;
+    margin: 0 auto;
+    background: #fff;
+    border: 2px solid #c9d4e2;
+    border-radius: 18px;
+    padding: 20px 22px 18px;
+  }
+  .cg-wrap h1 {
+    margin: 0 0 6px;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--navy);
+    letter-spacing: -0.02em;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--txt);
+    margin-bottom: 14px;
+  }
+  .legend .swatch {
+    width: 18px; height: 16px; border-radius: 4px;
+    background: var(--fuel); border: 2px solid var(--fueld);
+    display: inline-block; vertical-align: middle; margin-right: 6px;
+  }
+  .legend .cgdot {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid #000; background:
+      conic-gradient(#000 0 90deg, #fff 90deg 180deg, #000 180deg 270deg, #fff 270deg);
+    display: inline-block; vertical-align: middle; margin-right: 6px;
+  }
+  /* Hide radios; style labels as buttons */
+  .cg-wrap input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .tabs {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .tabs label {
+    flex: 1 1 140px;
+    text-align: center;
+    padding: 12px 10px;
+    border-radius: 12px;
+    border: 3px solid #c9d4e2;
+    background: #f4f7fb;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--navy);
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s, border-color .15s, color .15s, transform .1s;
+  }
+  .tabs label:hover { transform: translateY(-1px); }
+  .tabs label small {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray);
+    margin-top: 2px;
+  }
+  #s1:checked ~ .tabs label[for="s1"],
+  #s2:checked ~ .tabs label[for="s2"],
+  #s3:checked ~ .tabs label[for="s3"] {
+    color: #fff;
+  }
+  #s1:checked ~ .tabs label[for="s1"] { background: var(--green); border-color: var(--green); }
+  #s1:checked ~ .tabs label[for="s1"] small { color: #e8f8ee; }
+  #s2:checked ~ .tabs label[for="s2"] { background: #c99a00; border-color: #c99a00; }
+  #s2:checked ~ .tabs label[for="s2"] small { color: #fff6d6; }
+  #s3:checked ~ .tabs label[for="s3"] { background: var(--red); border-color: var(--red); }
+  #s3:checked ~ .tabs label[for="s3"] small { color: #ffe4e1; }
+
+  .stage {
+    position: relative;
+    border-radius: 16px;
+    border: 3px solid var(--green);
+    background: #f6fbf8;
+    overflow: hidden;
+    min-height: 420px;
+  }
+  #s2:checked ~ .stage { border-color: #c99a00; background: #fffcf0; }
+  #s3:checked ~ .stage { border-color: var(--red); background: #fff3f2; }
+
+  .panel {
+    display: none;
+    padding: 8px 8px 0;
+  }
+  #s1:checked ~ .stage .p1 { display: block; }
+  #s2:checked ~ .stage .p2 { display: block; }
+  #s3:checked ~ .stage .p3 { display: block; }
+
+  .stage svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    max-height: 490px;
+  }
+
+  .caption {
+    margin: 14px 0 0;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #eef3f9;
+    border: 1px solid #c9d4e2;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1.35;
+    min-height: 52px;
+  }
+  .caption > span { display: none; }
+  #s1:checked ~ .caption .c1 { display: inline; }
+  #s2:checked ~ .caption .c2 { display: inline; }
+  #s3:checked ~ .caption .c3 { display: inline; }
+
+  .hint {
+    margin: 10px 0 0;
+    font-size: 13px;
+    color: var(--gray);
+    font-weight: 600;
+  }
+  .hdr { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+  .langs { display:flex; gap:6px; }
+  .langs label { padding:6px 14px; border-radius:999px; border:2px solid #c9d4e2; background:#f4f7fb; font-weight:800; font-size:14px; color:var(--navy); cursor:pointer; user-select:none; }
+  #lang-en:checked ~ .hdr label[for="lang-en"], #lang-fr:checked ~ .hdr label[for="lang-fr"], #lang-es:checked ~ .hdr label[for="lang-es"] { background:var(--navy); border-color:var(--navy); color:#fff; }
+  .i18n-fr, .i18n-es { display:none; }
+  #lang-en:checked ~ * .i18n-en, #lang-fr:checked ~ * .i18n-fr, #lang-es:checked ~ * .i18n-es { display:inline; }
+  #lang-fr:checked ~ * .i18n-en, #lang-es:checked ~ * .i18n-en { display:none; }
+</style>
+</head>
+<body>
+<div class="cg-wrap">
+  <input type="radio" name="cglang" id="lang-en" checked/>
+  <input type="radio" name="cglang" id="lang-fr"/>
+  <input type="radio" name="cglang" id="lang-es"/>
+  <div class="hdr"><h1><span class="i18n-en">Center of gravity and track width</span><span class="i18n-fr">Centre de gravité et largeur de voie</span><span class="i18n-es">Centro de gravedad y ancho de vía</span></h1>
+  <div class="langs"><label for="lang-en" title="English">EN</label><label for="lang-fr" title="Français (Québec)">FR</label><label for="lang-es" title="Español (EE. UU.)">ES</label></div></div>
+  <div class="legend">
+    <span><span class="swatch"></span><span class="i18n-en">Fuel (about 2/3 full)</span><span class="i18n-fr">Carburant (environ aux 2/3)</span><span class="i18n-es">Combustible (cerca de 2/3 lleno)</span></span>
+    <span><span class="cgdot"></span><span class="i18n-en">Center of gravity (CG)</span><span class="i18n-fr">Centre de gravité (CG)</span><span class="i18n-es">Centro de gravedad (CG)</span></span>
+  </div>
+
+  <input type="radio" name="cgstate" id="s1" checked/>
+  <input type="radio" name="cgstate" id="s2"/>
+  <input type="radio" name="cgstate" id="s3"/>
+
+  <div class="tabs">
+    <label for="s1">1 · <span class="i18n-en">Upright</span><span class="i18n-fr">Droit</span><span class="i18n-es">Vertical</span><small><span class="i18n-en">Stable</span><span class="i18n-fr">Stable</span><span class="i18n-es">Estable</span></small></label>
+    <label for="s2">2 · <span class="i18n-en">Leaning</span><span class="i18n-fr">En virage</span><span class="i18n-es">Inclinado</span><small><span class="i18n-en">CG shifts with fuel</span><span class="i18n-fr">Le CG suit le carburant</span><span class="i18n-es">El CG se mueve con el combustible</span></small></label>
+    <label for="s3">3 · <span class="i18n-en">Tipping</span><span class="i18n-fr">Point de bascule</span><span class="i18n-es">Punto de vuelco</span><small><span class="i18n-en">Rollover</span><span class="i18n-fr">Renversement</span><span class="i18n-es">Volcadura</span></small></label>
+  </div>
+
+  <div class="stage">
+    <!-- Panel 1: Upright -->
+    <div class="panel p1">
+      <svg viewBox="0 0 900 445" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Upright tanker: weight line inside the track / Camion-citerne droit / Camión cisterna vertical">
+        <rect x="0" y="360" width="900" height="40" fill="#d3d9e1"/>
+        <line x1="0" y1="360" x2="900" y2="360" stroke="#7d8898" stroke-width="4"/>
+        <g transform="translate(450 360)">
+          <!-- wheels -->
+          <rect x="-95" y="-58" width="190" height="18" rx="5" fill="#4a566a"/>
+          <ellipse cx="0" cy="-48" rx="32" ry="24" fill="#3d485b" stroke="#2a3548" stroke-width="2"/>
+          <rect x="-142" y="-95" width="28" height="95" rx="9" fill="#20262f"/>
+          <rect x="-110" y="-95" width="28" height="95" rx="9" fill="#20262f"/>
+          <rect x="82" y="-95" width="28" height="95" rx="9" fill="#20262f"/>
+          <rect x="114" y="-95" width="28" height="95" rx="9" fill="#20262f"/>
+          <!-- frame + tank -->
+          <rect x="-108" y="-130" width="216" height="22" rx="4" fill="#2a3548"/>
+          <rect x="-78" y="-94" width="156" height="14" rx="3" fill="#8a96a8" stroke="#2a3548" stroke-width="2"/>
+          <rect x="-88" y="-146" width="176" height="16" rx="3" fill="#4a566a"/>
+          <defs><clipPath id="c1"><ellipse cx="0" cy="-242" rx="98" ry="100"/></clipPath></defs>
+          <ellipse cx="0" cy="-242" rx="104" ry="106" fill="#eaf0f7" stroke="#1b2f4e" stroke-width="8"/>
+          <g clip-path="url(#c1)">
+            <rect x="-110" y="-210" width="220" height="180" fill="#f39a1e"/>
+            <line x1="-110" y1="-210" x2="110" y2="-210" stroke="#c46f00" stroke-width="4"/>
+          </g>
+          <ellipse cx="0" cy="-242" rx="104" ry="106" fill="none" stroke="#1b2f4e" stroke-width="8"/>
+          <!-- weight line + CG -->
+          <line x1="0" y1="-230" x2="0" y2="0" stroke="#fff" stroke-width="8"/>
+          <line x1="0" y1="-230" x2="0" y2="0" stroke="#1b2f4e" stroke-width="4" stroke-dasharray="12 8"/>
+          <circle cx="0" cy="0" r="7" fill="#2f9e5a" stroke="#fff" stroke-width="3"/>
+          <!-- CG symbol -->
+          <g>
+            <circle cx="0" cy="-230" r="18" fill="#fff" stroke="#000" stroke-width="3"/>
+            <path d="M0,-230 L0,-248 A18,18 0 0 0 -18,-230 Z" fill="#000"/>
+            <path d="M0,-230 L0,-212 A18,18 0 0 0 18,-230 Z" fill="#000"/>
+          </g>
+          <text x="-28" y="-224" font-family="Arial,sans-serif" font-size="22" font-weight="800" fill="#1b2f4e" text-anchor="end">CG</text>
+          <text class="i18n-en" x="0" y="28" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#1b2f4e" text-anchor="middle">Weight line</text><text class="i18n-fr" x="0" y="28" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#1b2f4e" text-anchor="middle">Ligne de poids</text><text class="i18n-es" x="0" y="28" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#1b2f4e" text-anchor="middle">Línea de peso</text>
+          <!-- track width -->
+          <line x1="-110" y1="48" x2="110" y2="48" stroke="#5a6678" stroke-width="3"/>
+          <polygon points="-110,48 -100,42 -100,54" fill="#5a6678"/>
+          <polygon points="110,48 100,42 100,54" fill="#5a6678"/>
+          <text class="i18n-en" x="0" y="70" font-family="Arial,sans-serif" font-size="16" font-weight="700" fill="#5a6678" text-anchor="middle">Track width</text><text class="i18n-fr" x="0" y="70" font-family="Arial,sans-serif" font-size="16" font-weight="700" fill="#5a6678" text-anchor="middle">Largeur de voie</text><text class="i18n-es" x="0" y="70" font-family="Arial,sans-serif" font-size="16" font-weight="700" fill="#5a6678" text-anchor="middle">Ancho de vía</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Panel 2: Leaning — CG shift is the hero -->
+    <div class="panel p2">
+      <svg viewBox="0 0 900 445" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Leaning tanker: fuel piles outward and CG moves with it / Camion-citerne en virage / Camión cisterna inclinado">
+        <rect x="0" y="360" width="900" height="40" fill="#d3d9e1"/>
+        <line x1="0" y1="360" x2="900" y2="360" stroke="#7d8898" stroke-width="4"/>
+        <g transform="translate(430 360)">
+          <!-- wheels fixed -->
+          <rect x="-95" y="-58" width="190" height="18" rx="5" fill="#4a566a"/>
+          <ellipse cx="0" cy="-48" rx="32" ry="24" fill="#3d485b" stroke="#2a3548" stroke-width="2"/>
+          <rect x="-142" y="-95" width="28" height="95" rx="9" fill="#20262f"/>
+          <rect x="-110" y="-95" width="28" height="95" rx="9" fill="#20262f"/>
+          <rect x="82" y="-95" width="28" height="95" rx="9" fill="#20262f"/>
+          <rect x="114" y="-95" width="28" height="95" rx="9" fill="#20262f"/>
+          <!-- leaned body -->
+          <g transform="rotate(14 0 -50)">
+            <rect x="-108" y="-130" width="216" height="22" rx="4" fill="#2a3548"/>
+            <rect x="-78" y="-94" width="156" height="14" rx="3" fill="#8a96a8" stroke="#2a3548" stroke-width="2"/>
+            <rect x="-88" y="-146" width="176" height="16" rx="3" fill="#4a566a"/>
+            <defs><clipPath id="c2"><ellipse cx="0" cy="-242" rx="98" ry="100"/></clipPath></defs>
+            <ellipse cx="0" cy="-242" rx="104" ry="106" fill="#eaf0f7" stroke="#1b2f4e" stroke-width="8"/>
+            <!-- fuel piled to outside (right): tilted surface -->
+            <g clip-path="url(#c2)">
+              <polygon points="-120,-130 120,-250 120,-40 -120,-40" fill="#f39a1e"/>
+              <line x1="-120" y1="-130" x2="120" y2="-250" stroke="#c46f00" stroke-width="4"/>
+            </g>
+            <ellipse cx="0" cy="-242" rx="104" ry="106" fill="none" stroke="#1b2f4e" stroke-width="8"/>
+          </g>
+          <!-- Ghost CG (original center) -->
+          <circle cx="0" cy="-230" r="20" fill="none" stroke="#fff" stroke-width="7"/>
+          <circle cx="0" cy="-230" r="20" fill="none" stroke="#5a6678" stroke-width="3.5" stroke-dasharray="6 5"/>
+          <circle cx="0" cy="-230" r="5" fill="#5a6678" opacity="0.55"/>
+          <!-- New CG (shifted outward with fuel) -->
+          <g>
+            <line x1="48" y1="-218" x2="48" y2="0" stroke="#fff" stroke-width="8"/>
+            <line x1="48" y1="-218" x2="48" y2="0" stroke="#1b2f4e" stroke-width="4" stroke-dasharray="12 8"/>
+            <circle cx="48" cy="0" r="7" fill="#f4c20d" stroke="#1b2f4e" stroke-width="3"/>
+            <circle cx="48" cy="-218" r="20" fill="#fff" stroke="#000" stroke-width="3"/>
+            <path d="M48,-218 L48,-238 A20,20 0 0 0 28,-218 Z" fill="#000"/>
+            <path d="M48,-218 L48,-198 A20,20 0 0 0 68,-218 Z" fill="#000"/>
+          </g>
+          <!-- Hero arrow: CG moves with the fuel -->
+          <line x1="18" y1="-228" x2="30" y2="-222" stroke="#fff" stroke-width="16" stroke-linecap="round"/>
+          <line x1="18" y1="-228" x2="30" y2="-222" stroke="#1b2f4e" stroke-width="10" stroke-linecap="round"/>
+          <polygon points="22,-236 44,-210 36,-208 52,-204 46,-226 38,-222" fill="#1b2f4e" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
+          <text class="i18n-en" x="24" y="-258" font-family="Arial,sans-serif" font-size="20" font-weight="800" fill="#1b2f4e" text-anchor="middle">CG moves with the fuel</text><text class="i18n-fr" x="24" y="-258" font-family="Arial,sans-serif" font-size="20" font-weight="800" fill="#1b2f4e" text-anchor="middle">Le CG suit le carburant</text><text class="i18n-es" x="24" y="-258" font-family="Arial,sans-serif" font-size="20" font-weight="800" fill="#1b2f4e" text-anchor="middle">El CG se mueve con el combustible</text>
+          <!-- Sideways force -->
+          <defs>
+            <marker id="arrR" markerUnits="userSpaceOnUse" markerWidth="22" markerHeight="22" refX="8" refY="5" viewBox="0 0 10 10" orient="auto">
+              <path d="M0,0 L10,5 L0,10 Z" fill="#d93025"/>
+            </marker>
+          </defs>
+          <line x1="78" y1="-210" x2="175" y2="-210" stroke="#fff" stroke-width="12" stroke-linecap="round"/>
+          <line x1="78" y1="-210" x2="175" y2="-210" stroke="#d93025" stroke-width="7" stroke-linecap="round" marker-end="url(#arrR)"/>
+          <text class="i18n-en" x="126" y="-222" font-family="Arial,sans-serif" font-size="16" font-weight="800" fill="#d93025" text-anchor="middle">Sideways force</text><text class="i18n-fr" x="126" y="-222" font-family="Arial,sans-serif" font-size="16" font-weight="800" fill="#d93025" text-anchor="middle">Force latérale</text><text class="i18n-es" x="126" y="-222" font-family="Arial,sans-serif" font-size="16" font-weight="800" fill="#d93025" text-anchor="middle">Fuerza lateral</text>
+          <text x="72" y="-236" font-family="Arial,sans-serif" font-size="20" font-weight="800" fill="#1b2f4e">CG</text>
+          <text class="i18n-en" x="48" y="28" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#1b2f4e" text-anchor="middle">Weight line</text><text class="i18n-fr" x="48" y="28" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#1b2f4e" text-anchor="middle">Ligne de poids</text><text class="i18n-es" x="48" y="28" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#1b2f4e" text-anchor="middle">Línea de peso</text>
+          <text class="i18n-en" x="-200" y="70" font-family="Arial,sans-serif" font-size="15" font-weight="600" fill="#5a6678">Inside of curve</text><text class="i18n-fr" x="-200" y="70" font-family="Arial,sans-serif" font-size="15" font-weight="600" fill="#5a6678">Intérieur du virage</text><text class="i18n-es" x="-200" y="70" font-family="Arial,sans-serif" font-size="15" font-weight="600" fill="#5a6678">Interior de la curva</text>
+          <text class="i18n-en" x="200" y="70" font-family="Arial,sans-serif" font-size="15" font-weight="600" fill="#5a6678" text-anchor="end">Outside of curve</text><text class="i18n-fr" x="200" y="70" font-family="Arial,sans-serif" font-size="15" font-weight="600" fill="#5a6678" text-anchor="end">Extérieur du virage</text><text class="i18n-es" x="200" y="70" font-family="Arial,sans-serif" font-size="15" font-weight="600" fill="#5a6678" text-anchor="end">Exterior de la curva</text>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Panel 3: Tipping -->
+    <div class="panel p3">
+      <svg viewBox="0 0 900 445" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Tipping tanker: weight line past outside wheels / Camion-citerne au point de bascule / Camión cisterna en punto de vuelco">
+        <rect x="0" y="360" width="900" height="40" fill="#d3d9e1"/>
+        <line x1="0" y1="360" x2="900" y2="360" stroke="#7d8898" stroke-width="4"/>
+        <!-- warning badge -->
+        <g transform="translate(820 48)">
+          <polygon points="0,-22 26,22 -26,22" fill="#fff" stroke="#fff" stroke-width="4" stroke-linejoin="round"/>
+          <text x="0" y="16" font-family="Arial,sans-serif" font-size="26" font-weight="900" fill="#d93025" text-anchor="middle">!</text>
+        </g>
+        <g transform="translate(400 360) rotate(26 140 0)">
+          <rect x="-95" y="-58" width="190" height="18" rx="5" fill="#4a566a"/>
+          <ellipse cx="0" cy="-48" rx="32" ry="24" fill="#3d485b" stroke="#2a3548" stroke-width="2"/>
+          <rect x="-142" y="-95" width="28" height="95" rx="9" fill="#20262f"/>
+          <rect x="-110" y="-95" width="28" height="95" rx="9" fill="#20262f"/>
+          <rect x="82" y="-95" width="28" height="95" rx="9" fill="#20262f"/>
+          <rect x="114" y="-95" width="28" height="95" rx="9" fill="#20262f"/>
+          <rect x="-108" y="-130" width="216" height="22" rx="4" fill="#2a3548"/>
+          <rect x="-78" y="-94" width="156" height="14" rx="3" fill="#8a96a8" stroke="#2a3548" stroke-width="2"/>
+          <rect x="-88" y="-146" width="176" height="16" rx="3" fill="#4a566a"/>
+          <defs><clipPath id="c3"><ellipse cx="0" cy="-242" rx="98" ry="100"/></clipPath></defs>
+          <ellipse cx="0" cy="-242" rx="104" ry="106" fill="#eaf0f7" stroke="#1b2f4e" stroke-width="8"/>
+          <g clip-path="url(#c3)">
+            <polygon points="-120,-70 120,-290 120,-40 -120,-40" fill="#f39a1e"/>
+            <line x1="-120" y1="-70" x2="120" y2="-290" stroke="#c46f00" stroke-width="4"/>
+          </g>
+          <ellipse cx="0" cy="-242" rx="104" ry="106" fill="none" stroke="#1b2f4e" stroke-width="8"/>
+          <g>
+            <circle cx="58" cy="-198" r="18" fill="#fff" stroke="#000" stroke-width="3"/>
+            <path d="M58,-198 L58,-216 A18,18 0 0 0 40,-198 Z" fill="#000"/>
+            <path d="M58,-198 L58,-180 A18,18 0 0 0 76,-198 Z" fill="#000"/>
+          </g>
+        </g>
+        <!-- Weight line past outside wheels (scene space after ~26deg about outer tire) -->
+        <g transform="translate(400 360)">
+          <line x1="205" y1="-160" x2="205" y2="0" stroke="#fff" stroke-width="8"/>
+          <line x1="205" y1="-160" x2="205" y2="0" stroke="#d93025" stroke-width="4" stroke-dasharray="12 8"/>
+          <circle cx="205" cy="0" r="7" fill="#d93025" stroke="#fff" stroke-width="3"/>
+          <text class="i18n-en" x="205" y="28" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#d93025" text-anchor="middle">Weight line</text><text class="i18n-fr" x="205" y="28" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#d93025" text-anchor="middle">Ligne de poids</text><text class="i18n-es" x="205" y="28" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#d93025" text-anchor="middle">Línea de peso</text>
+          <!-- lift callout near inside wheels -->
+          <text class="i18n-en" x="-30" y="-55" font-family="Arial,sans-serif" font-size="17" font-weight="800" fill="#d93025" text-anchor="middle">Inside wheels</text><text class="i18n-fr" x="-30" y="-55" font-family="Arial,sans-serif" font-size="17" font-weight="800" fill="#d93025" text-anchor="middle">Les roues intérieures</text><text class="i18n-es" x="-30" y="-55" font-family="Arial,sans-serif" font-size="17" font-weight="800" fill="#d93025" text-anchor="middle">Las ruedas interiores</text>
+          <text class="i18n-en" x="-30" y="-34" font-family="Arial,sans-serif" font-size="17" font-weight="800" fill="#d93025" text-anchor="middle">lift off the road</text><text class="i18n-fr" x="-30" y="-34" font-family="Arial,sans-serif" font-size="17" font-weight="800" fill="#d93025" text-anchor="middle">quittent la chaussée</text><text class="i18n-es" x="-30" y="-34" font-family="Arial,sans-serif" font-size="17" font-weight="800" fill="#d93025" text-anchor="middle">se levantan del piso</text>
+          <line x1="-30" y1="-70" x2="-30" y2="-110" stroke="#d93025" stroke-width="3"/>
+          <polygon points="-38,-108 -22,-108 -30,-122" fill="#d93025"/>
+          <text class="i18n-en" x="-170" y="70" font-family="Arial,sans-serif" font-size="15" font-weight="600" fill="#5a6678">Inside of curve</text><text class="i18n-fr" x="-170" y="70" font-family="Arial,sans-serif" font-size="15" font-weight="600" fill="#5a6678">Intérieur du virage</text><text class="i18n-es" x="-170" y="70" font-family="Arial,sans-serif" font-size="15" font-weight="600" fill="#5a6678">Interior de la curva</text>
+          <text class="i18n-en" x="280" y="70" font-family="Arial,sans-serif" font-size="15" font-weight="600" fill="#5a6678" text-anchor="end">Outside of curve</text><text class="i18n-fr" x="280" y="70" font-family="Arial,sans-serif" font-size="15" font-weight="600" fill="#5a6678" text-anchor="end">Extérieur du virage</text><text class="i18n-es" x="280" y="70" font-family="Arial,sans-serif" font-size="15" font-weight="600" fill="#5a6678" text-anchor="end">Exterior de la curva</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <div class="caption">
+    <span class="c1"><span class="i18n-en">Weight line falls well inside the wheels. The truck is stable.</span><span class="i18n-fr">La ligne de poids tombe bien à l’intérieur des roues. Le camion est stable.</span><span class="i18n-es">La línea de peso cae bien dentro de las ruedas. El camión está estable.</span></span>
+    <span class="c2"><span class="i18n-en">Fuel piles to the outside. The CG moves with it — and the weight line nears the outside wheels.</span><span class="i18n-fr">Le carburant s’accumule vers l’extérieur. Le CG le suit — et la ligne de poids se rapproche des roues extérieures.</span><span class="i18n-es">El combustible se acumula hacia afuera. El CG se mueve con él, y la línea de peso se acerca a las ruedas exteriores.</span></span>
+    <span class="c3"><span class="i18n-en">Weight line passes the outside wheels. Inside wheels lift. Rollover.</span><span class="i18n-fr">La ligne de poids dépasse les roues extérieures. Les roues intérieures se soulèvent. Renversement.</span><span class="i18n-es">La línea de peso pasa las ruedas exteriores. Las ruedas interiores se levantan. Volcadura.</span></span>
+  </div>
+  <p class="hint"><span class="i18n-en">Tap a stage above to see how fuel shift moves the center of gravity.</span><span class="i18n-fr">Touchez une étape ci-dessus pour voir comment le déplacement du carburant déplace le centre de gravité.</span><span class="i18n-es">Toque una etapa arriba para ver cómo el desplazamiento del combustible mueve el centro de gravedad.</span></p>
+</div>
+</body>
+</html>
